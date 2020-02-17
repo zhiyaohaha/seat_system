@@ -1,6 +1,6 @@
-# seat_system
+# seat_system 图书馆预约系统
 
-## Project setup
+## Project setup 
 ```
 npm install
 ```
