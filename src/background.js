@@ -1,6 +1,6 @@
 'use strict'
 
-import { app, protocol, BrowserWindow, Menu } from 'electron'
+import { app, protocol, BrowserWindow, Menu, dialog } from 'electron'
 import {
   createProtocol,
   /* installVueDevtools */
@@ -34,7 +34,13 @@ let template = [
     label:'介绍',
     accelerator: 'CmdOrCtrl+H',
     click () {
-      showOpenDialog()
+      dialog.showMessageBox({
+        type:"info",
+        title:"作品介绍",
+        message:"作者：韩宇峰\n" +
+        "项目名称：图书馆座位预约系统\n" +
+        "主要功能：选择图书馆内的座位，达到图书馆座位最大有效利用"
+      })
     }
   }
 ]
