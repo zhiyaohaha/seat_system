@@ -100,6 +100,7 @@
         this.$refs[formName].validate((valid) => {
           if (valid) {
             let usersList = localStorage.getItem('usersList')
+            console.log(usersList);
             if(this.registerFlag){ // 是注册还是登录
               // 注册
               if(usersList){
@@ -127,6 +128,7 @@
                   })
                 }
               }else {
+                usersList = []
                 usersList.push({
                   userName:this.ruleForm.userName,
                   pass:this.ruleForm.pass

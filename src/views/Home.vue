@@ -45,27 +45,29 @@
         <el-col :span="2">
           <div>楼层</div>
         </el-col>
-        <el-col :span="2">
-          <el-button type="primary">1F</el-button>
+        <el-col :span="2" v-for="item in 4" :key="item">
+          <el-button type="primary" @click="seatDataPost(item)">{{item}}F</el-button>
         </el-col>
-        <el-col :span="2">
-          <el-button type="primary">2F</el-button>
-        </el-col>
-        <el-col :span="2">
-          <el-button type="primary">3F</el-button>
-        </el-col>
-        <el-col :span="2">
-          <el-button type="primary">4F</el-button>
+        <el-col :span="8">
+          总计:一层总计64个座位 已预约:{{amount}}个座位
         </el-col>
       </el-row>
-      <el-card class="seat">
-        <el-row :gutter="20">
-          <el-col :span="6">
-            <el-card class="desk">
+      <el-card class="seat" :body-style="{display:'flex',
+        'flex-wrap':'wrap',
+        'justify-content':'space-between',
+        'padding': '0 20px',
+        'align-content': 'space-between'
+        }"
+               shadow="always">
+        <el-card class="desk" shadow="always" v-for="(item) in seatData" :key="item.code">
+          <template v-for="it in item.seat">
+            <div :key="it.seatCode">
+              <i class="el-icon-user-solid" :class="{iconColor:it.flag}"></i>
+              {{it.seatCode}}
+            </div>
+          </template>
 
-            </el-card>
-          </el-col>
-        </el-row>
+        </el-card>
       </el-card>
     </el-card>
   </div>
@@ -87,8 +89,8 @@
         logInFlag = true
       }
       return {
-        logInFlag: logInFlag,
-        dateValue: '',
+        logInFlag: logInFlag, // 是否登录
+        dateValue: '', // 天
         timeValue1: '', // 开始时间
         timeValue2: '', // 结束时间
         pickerOptions: {
@@ -98,10 +100,33 @@
             return time.getTime() < today || time.getTime() > mondayTime;
           }
         },
+        seatData: null
       }
     },
     components: {
       logIn
+    },
+    created() {
+      this.seatDataPost(1)
+    },
+    methods: {
+      seatDataPost(id) {
+        this.$ajax('/seatData', {
+          id: id
+        }).then((res) => {
+          this.seatData = res.floor.desk
+          let amount = 0
+          this.seatData.forEach((item) => {
+            item.seat.forEach((it)=>{
+              if(it.flag){
+                amount++
+              }
+            })
+          })
+          this.amount = amount
+          console.log(this.seatData);
+        })
+      }
     }
   }
 </script>
@@ -120,5 +145,11 @@
         margin-top 20px
         height 530px
         .desk
-          height 80px
+          width 205px
+          height 118px
+          margin-top 10px
+          .el-icon-user-solid
+            color #34F11F
+          .iconColor
+            color red
 </style>
