@@ -1,15 +1,16 @@
 'use strict'
 
-import { app, protocol, BrowserWindow, Menu, dialog } from 'electron'
+import {app, protocol, BrowserWindow, Menu, dialog} from 'electron'
 import {
   createProtocol,
   /* installVueDevtools */
 } from 'vue-cli-plugin-electron-builder/lib'
+
 const isDevelopment = process.env.NODE_ENV !== 'production'
 // 自定义菜单
 let template = [
   {
-    label:'控制',
+    label: '控制',
     submenu: [{
       label: '最小化',
       accelerator: 'CmdOrCtrl+M',
@@ -28,16 +29,30 @@ let template = [
       click: function () {
         app.emit('activate')
       }
+    }, {
+      label: '切换开发者工具',
+      accelerator: (() => {
+        if (process.platform === 'darwin') {
+          return 'Alt+Command+I'
+        } else {
+          return 'Ctrl+Shift+I'
+        }
+      })(),
+      click: (item, focusedWindow) => {
+        if (focusedWindow) {
+          focusedWindow.toggleDevTools()
+        }
+      }
     }]
   },
   {
-    label:'介绍',
+    label: '介绍',
     accelerator: 'CmdOrCtrl+H',
-    click () {
+    click() {
       dialog.showMessageBox({
-        type:"info",
-        title:"作品介绍",
-        message:"作者：韩宇峰\n" +
+        type: "info",
+        title: "作品介绍",
+        message: "作者：韩宇峰\n" +
         "项目名称：图书馆座位预约系统\n" +
         "主要功能：选择图书馆内的座位，达到图书馆座位最大有效利用"
       })
@@ -50,13 +65,25 @@ let menu = Menu.buildFromTemplate(template)
 let win
 
 // Scheme must be registered before the app is ready
-protocol.registerSchemesAsPrivileged([{scheme: 'app', privileges: { secure: true, standard: true } }])
+protocol.registerSchemesAsPrivileged([{scheme: 'app', privileges: {secure: true, standard: true}}])
 
-function createWindow () {
+function createWindow() {
   // Create the browser window.
-  win = new BrowserWindow({ width: 800, height: 600, webPreferences: {
-    nodeIntegration: true
-  } })
+  let height = 800
+  let width = 1000
+  win = new BrowserWindow({
+    width: width,
+    height: height,
+    minWidth:width,
+    maxWidth:width,
+    minHeight:height,
+    maxHeight:height,
+    resizable: false,
+    webPreferences: {
+      nodeIntegration: true,
+      frame: false
+    }
+  })
 
   if (process.env.WEBPACK_DEV_SERVER_URL) {
     // Load the url of the dev server if in development mode
