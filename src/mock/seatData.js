@@ -5,7 +5,13 @@ let floor1 = Mock.mock({
     'seat|4':[
       {
         'seatCode|+1':101,
-        'flag|1-2':true
+        'flag|1-2':true,
+        'startTime'(){
+          return new Date(Mock.mock('@now(hour)')).getTime()
+        },
+        'endTime':function () {
+          return this.startTime + 3600000*4
+        }
       }
     ]
   }]
@@ -38,7 +44,8 @@ let floor4 = Mock.mock({
     'seat|4':[
       {
         'seatCode|+1':401,
-        'flag|1-2':true
+        'flag|1-2':true,
+        'startTime':''
       }
     ]
   }]

@@ -7,7 +7,7 @@ import ajax from './ajax'
 import './common/reset.styl'
 import 'element-ui/lib/theme-chalk/index.css'
 import './mock/seatData'
-
+import './db/index'
 Vue.use(ElementUI);
 Vue.prototype.$ajax = ajax
 Vue.config.productionTip = false
