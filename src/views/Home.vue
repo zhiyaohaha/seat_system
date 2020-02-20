@@ -1,5 +1,6 @@
 <template>
   <div class="home">
+    <!--<logIn v-if="logInFlag"></logIn>-->
     <logIn v-if="logInFlag"></logIn>
     <el-card class="box_card" shadow="always">
       <el-row class="time_select" align="middle">
@@ -20,16 +21,19 @@
           <el-time-select
             @change="timeSelect"
             v-model="timeValue1"
+            :disabled="timeValue1Disabled"
             :picker-options="{
                 start: '08:00',
                 step: '1:00',
-                end: '21:00'
+                end: '21:00',
+                minTime:startMinTime
               }"
             placeholder="开始时间">
           </el-time-select>
         </el-col>
         <el-col :span="6">
           <el-time-select
+            :disabled="timeValue2Disabled"
             @change="timeSelect"
             v-model="timeValue2"
             :picker-options="{
@@ -61,14 +65,14 @@
         }"
                shadow="always">
         <el-card class="desk clear" shadow="always" v-for="(item) in seatData" :key="item.code"
-          :body-style="{
+                 :body-style="{
             position:'relative',
             width:'205px',
             height:'118px',
             'box-sizing':'border-box'
           }">
           <template v-for="(it, ind) in item.seat">
-            <div class="desk_seat" :key="it.seatCode" @click="deskSeatSelect(it)" :class="{top_left:ind===0,
+            <div class="desk_seat" :key="it.seatCode" @click="deskSeatSelect(item,it)" :class="{top_left:ind===0,
             top_right:ind===1,
             bottom_left:ind===2,
             bottom_right:ind===3}">
@@ -87,20 +91,12 @@
   // @ is an alias to /src
   import logIn from '../components/logIn'
   import {formatTime} from '../tools/util'
+  import db from '../db'
 
   export default {
     name: 'Home',
     data() {
-      let userName = localStorage.getItem('userName') || ""
-      let pass = localStorage.getItem('pass') || ""
-      let logInFlag = false
-      if (userName && pass) {
-        logInFlag = false
-      } else {
-        logInFlag = true
-      }
       return {
-        logInFlag: logInFlag, // 是否登录
         dateValue: '', // 天
         timeValue1: '', // 开始时间
         timeValue2: '', // 结束时间
@@ -114,11 +110,42 @@
         seatData: null, // 座位信息
         amount: 0,// 已预约座位
         floor: 1, // 以选择楼层
-        appointmentDate:''
+        appointmentDate: ''
       }
     },
     components: {
       logIn
+    },
+    computed: {
+      startMinTime() {
+        let time = '7:00'
+        let dateDay = ''
+        let nowDay = formatTime(new Date().getTime(), 'D')
+        if (this.dateValue) {
+          dateDay = formatTime(this.dateValue * 1, 'D')
+          if (dateDay === nowDay) {
+            time = formatTime(new Date().getTime(), 'h:00')
+          }
+        }
+        return time
+      },
+      timeValue1Disabled() {
+        return !this.dateValue
+      },
+      timeValue2Disabled() {
+        return !this.dateValue || !this.timeValue1
+      },
+      logInFlag(){
+        let userName = localStorage.getItem('userName') || ""
+        let pass = localStorage.getItem('pass') || ""
+        let logInFlag = false
+        if (userName && pass) {
+          logInFlag = false
+        } else {
+          logInFlag = true
+        }
+        return logInFlag
+      }
     },
     created() {
 
@@ -127,22 +154,28 @@
       // 获取座位数据
       seatDataPost(id) {
         this.floor = id
-        this.$ajax('/seatData', {
-          id: id
-        }).then((res) => {
-          this.seatData = res.floor.desk
+        let seatData = []
+        db.tasks.where('floor').anyOf([id]).each((res) => {
+          seatData.push(res)
+        }).then(() => {
           let amount = 0
-          this.seatData.forEach((item) => {
+          seatData.forEach((item) => {
             item.seat.forEach((it) => {
-              if (it.flag) {
+              let startTime = new Date(this.appointmentDate + ' ' + this.timeValue1).getTime()
+              let endTime = new Date(this.appointmentDate + ' ' + this.timeValue2).getTime()
+              if (startTime >= it.endTime || endTime <= it.startTime) {
+                it.flag = false
+              } else {
+                it.flag = true
                 amount++
               }
             })
           })
-          this.amount = amount
-          console.log(this.seatData);
+          this.seatData = seatData
+          this.amount = amount + ""
         })
       },
+      // 时间选择
       timeSelect() {
         let appointmentDate = ''
         if (this.dateValue) {
@@ -150,31 +183,51 @@
           appointmentDate = formatTime(selectDate, 'Y-M-D')
         }
         if (appointmentDate && this.timeValue1 && this.timeValue2) {
-          console.log(appointmentDate,this.timeValue1,this.timeValue2);
+          console.log(appointmentDate, this.timeValue1, this.timeValue2);
           this.appointmentDate = appointmentDate
           this.seatDataPost(this.floor)
         }
       },
       // 座位选择
-      deskSeatSelect(seat){
-        if(seat.flag){
-          this.$alert('此座位已被预约','提示')
-        }else {
-          this.$confirm('是否预约此座位','提示').then((res)=>{
-            console.log(res);
-            let subscribe = {
-              userName:localStorage.getItem('userName'),
-              Time:this.appointmentDate+' '+this.timeValue1+ '-' +this.timeValue2,
-              floor: this.floor,
-              seat:seat.seatCode
-            }
-            localStorage.setItem('subscribe',JSON.stringify(subscribe))
-            this.seatData.forEach()
-          }).catch((err)=>{
+      deskSeatSelect(desk, seat) {
+        let that = this
+        if (seat.flag) {
+          this.$alert('此座位已被预约', '提示')
+        } else {
+          let userId = localStorage.getItem('userId') * 1
+
+          this.$confirm('是否预约此座位', '提示').then(() => {
+            db.tasks.where("id").equals(desk.id).modify((res) => {
+              res.seat.forEach((item, index, arr) => {
+                if (seat.seatCode === item.seatCode) {
+                  arr[index] = {
+                    startTime: new Date(that.appointmentDate + ' ' + that.timeValue1).getTime(),
+                    endTime: new Date(that.appointmentDate + ' ' + that.timeValue2).getTime(),
+                    seatCode: item.seatCode
+                  }
+                }
+              })
+            }).then(() => {
+              db.user.where("id").equals(userId).modify((userRes) => {
+                userRes.seat[userRes.seat.length] = {
+                  floor:that.floor,
+                  startTime: new Date(that.appointmentDate + ' ' + that.timeValue1).getTime(),
+                  endTime: new Date(that.appointmentDate + ' ' + that.timeValue2).getTime(),
+                  seatCode: seat.seatCode
+                }
+              }).then(()=>{
+                that.$alert('您已预约成功','提示').then(()=>{
+                  that.seatDataPost(that.floor)
+                })
+              })
+            })
+          }).catch((err) => {
             console.log(err);
           })
         }
-      }
+      },
+      //  时间筛选
+      formatTime
     }
   }
 </script>

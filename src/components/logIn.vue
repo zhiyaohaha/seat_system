@@ -32,6 +32,7 @@
 </template>
 
 <script>
+  import db from '../db'
   export default {
     name: "log-in",
     data() {
@@ -99,95 +100,98 @@
       submitForm(formName) {
         this.$refs[formName].validate((valid) => {
           if (valid) {
-            let usersList = localStorage.getItem('usersList')
-            console.log(usersList);
-            if(this.registerFlag){ // 是注册还是登录
-              // 注册
-              if(usersList){
-                usersList = JSON.parse(usersList)
-                let flag = usersList.findIndex((item)=>{
-                  return item.userName === this.ruleForm.userName
-                })
-                if(flag == -1){
-                  usersList.push({
-                    userName:this.ruleForm.userName,
-                    pass:this.ruleForm.pass
+            db.user.toArray().then((res)=>{
+              console.log(res)
+              let usersList = res
+              console.log(usersList);
+              // 是注册还是登录
+              if(this.registerFlag){
+                // 注册
+                if(usersList&&usersList.length){
+                  let flag = usersList.findIndex((item)=>{
+                    return item.userName === this.ruleForm.userName
                   })
-                  localStorage.setItem("usersList",JSON.stringify(usersList));
+                  if(flag == -1){
+                    this.succeeRegister(this.succeedLogIn)
+                    this.$notify({
+                      title: '提示',
+                      message: '注册并登录成功',
+                      duration: 0
+                    })
+                  }else {
+                    this.$notify({
+                      title: '提示',
+                      message: '此账号已被注册，请更换用户名',
+                      duration: 0
+                    })
+                  }
+                }else {
+                  this.succeeRegister(this.succeedLogIn)
                   this.$notify({
                     title: '提示',
                     message: '注册并登录成功',
                     duration: 0
                   })
-                  this.succeedLogIn()
-                }else {
-                  this.$notify({
-                    title: '提示',
-                    message: '此账号已被注册，请更换用户名',
-                    duration: 0
-                  })
                 }
               }else {
-                usersList = []
-                usersList.push({
-                  userName:this.ruleForm.userName,
-                  pass:this.ruleForm.pass
-                })
-                localStorage.setItem("usersList",JSON.stringify(usersList));
-                this.$notify({
-                  title: '提示',
-                  message: '注册并登录成功',
-                  duration: 0
-                })
-                this.succeedLogIn()
-              }
-            }else {
-              // 登录
-              if(usersList){
-                usersList = JSON.parse(usersList)
-                let flag = usersList.findIndex((item)=>{
-                  return item.userName === this.ruleForm.userName
-                })
-                if(flag === -1){
+                // 登录
+                if(usersList&&usersList.length){
+                  let flag = usersList.findIndex((item)=>{
+                    return item.userName === this.ruleForm.userName
+                  })
+                  if(flag === -1){
+                    this.$notify({
+                      title: '提示',
+                      message: '此账号未注册，请先去注册',
+                      duration: 0
+                    })
+                  }else {
+                    if(usersList[flag].pass === this.ruleForm.pass){
+                      this.$notify({
+                        title: '提示',
+                        message: '登录成功',
+                        duration: 0
+                      })
+                      this.succeedLogIn()
+                    }else {
+                      this.$notify({
+                        title: '提示',
+                        message: '密码错误，请重新输入',
+                        duration: 0
+                      })
+                    }
+                  }
+                }else {
                   this.$notify({
                     title: '提示',
                     message: '此账号未注册，请先去注册',
                     duration: 0
                   })
-                }else {
-                  if(usersList[flag].pass === this.ruleForm.pass){
-                    this.$notify({
-                      title: '提示',
-                      message: '登录成功',
-                      duration: 0
-                    })
-                    this.succeedLogIn()
-                  }else {
-                    this.$notify({
-                      title: '提示',
-                      message: '密码错误，请重新输入',
-                      duration: 0
-                    })
-                  }
                 }
-              }else {
-                this.$notify({
-                  title: '提示',
-                  message: '此账号未注册，请先去注册',
-                  duration: 0
-                })
               }
-            }
+            })
+
           } else {
             console.log('error submit!!');
             return false;
           }
         });
       },
-      // 成功注册或登录逻辑
-      succeedLogIn(){
+      // 注册逻辑
+      succeeRegister(cb){
+        db.user.add({
+          userName:this.ruleForm.userName,
+          pass:this.ruleForm.pass,
+          seat:[]
+        }).then((res)=>{
+          cb&&cb(res)
+        })
+      },
+      // 成功登录逻辑
+      succeedLogIn(id){
         localStorage.setItem('userName',this.ruleForm.userName)
         localStorage.setItem('pass',this.ruleForm.pass)
+        id&&localStorage.setItem('userId',id)
         this.logInFlag = false
       },
       resetForm(formName) {
@@ -227,12 +231,13 @@
       .title
         color #333333
         font-size 18px
-        text-align content
+        text-align center
         margin-top 20px
         .register_flag
           color #1f6fff
           cursor pointer
       .demo-ruleForm
+        text-align center
         width 100%
         margin-top 10px
         .form_itme

@@ -1,23 +1,46 @@
 import Dexie from 'dexie';
+import * as floorData from "../mock/seatData";
 
-var db = new Dexie('seat');
-db.version(1).stores({
-  tasks: '++id,startTime,endTime,seatCode,desk,floor'
-})
+console.log(floorData['floor' + 1]);
+let floor1Data = []
 
-function generatedData() {
-  db.tasks.put({date: Date.now(), startTime: '110', endTime: '120', seatCode: 104, desk: 1, floor: 1}).then((res) => {
-    console.log("Got id " + res);
+function dataInput(num) {
+  floorData['floor' + num].desk.forEach((item) => {
+    floor1Data.push({
+      floor: num,
+      desk: item.code,
+      seat:item.seat
+    })
+    // item.seat.forEach((it) => {
+    //
+    // })
   })
-  // // Now lets add a bunch of tasks
-  // await db.tasks.bulkPut([
-  //   {date: Date.now(), description: 'Test Dexie bulkPut()', done: 1},
-  //   {date: Date.now(), description: 'Finish testing Dexie bulkPut()', done: 1}
-  // ]);
+}
+
+for (let i = 0; i < 4; i++) {
+  dataInput(i+1)
+}
+let db = new Dexie('seat');
+db.version(1).stores({
+  tasks: '++id,seat,floor,desk',
+  user:'++id,userName,pass,seat'
+})
+console.log(db.user);
+
+async function generatedData() {
+  await db.tasks.bulkPut([
+    ...floor1Data
+  ])
+  await db.tasks.put({
+    userName:'admin',
+    pass:'000000',
+    seat:[]
+  })
 }
 
 db.tasks.count((res) => {
   if (res < 1) {
-    test()
+    generatedData()
   }
 })
+export default db
