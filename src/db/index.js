@@ -4,7 +4,7 @@ import * as floorData from "../mock/seatData";
 console.log(floorData['floor' + 1]);
 let floor1Data = []
 
-function dataInput(num) {
+async function dataInput(num) {
   floorData['floor' + num].desk.forEach((item) => {
     floor1Data.push({
       floor: num,

@@ -18,8 +18,8 @@ export let floor1 = Mock.mock({
     'seat|4': [
       {
         'seatCode|+1': 101,
-        'startTime':startTime,
-        'endTime': endTime
+        userArr:[],
+        flag:false
       }
     ]
   }]
@@ -30,8 +30,8 @@ export let floor2 = Mock.mock({
     'seat|4': [
       {
         'seatCode|+1': 201,
-        'startTime':startTime,
-        'endTime': endTime
+        userArr:[],
+        flag:false
       }
     ]
   }]
@@ -42,8 +42,8 @@ export  let floor3 = Mock.mock({
     'seat|4': [
       {
         'seatCode|+1': 301,
-        'startTime':startTime,
-        'endTime': endTime
+        userArr:[],
+        flag:false
       }
     ]
   }]
@@ -54,8 +54,8 @@ export let floor4 = Mock.mock({
     'seat|4': [
       {
         'seatCode|+1': 401,
-        'startTime':startTime,
-        'endTime': endTime
+        userArr:[],
+        flag:false
       }
     ]
   }]
