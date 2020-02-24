@@ -1,8 +1,8 @@
 <template>
-  <div class="home">
+  <div class="home" @succeedLogIn="succeedLogIn">
     <!--<logIn v-if="logInFlag"></logIn>-->
-    <logIn v-if="logInFlag"></logIn>
-    <myInfo></myInfo>
+    <logIn :logInFlag="logInFlag" @succeedLogIn="succeedLogIn"></logIn>
+    <myInfo @quit="quit"></myInfo>
     <el-card class="box_card" shadow="always">
       <el-row class="time_select" align="middle">
         <el-col :span="2">
@@ -20,7 +20,7 @@
         </el-col>
         <el-col :span="6">
           <el-time-select
-            @change="timeSelect"
+            @change="timeSelect('timeValue1')"
             v-model="timeValue1"
             :disabled="timeValue1Disabled"
             :picker-options="{
@@ -98,7 +98,16 @@
   export default {
     name: 'Home',
     data() {
+      let userName = localStorage.getItem('userName') || ""
+      let pass = localStorage.getItem('pass') || ""
+      let logInFlag = false
+      if (userName && pass) {
+        logInFlag = false
+      } else {
+        logInFlag = true
+      }
       return {
+        logInFlag:logInFlag,
         dateValue: '', // 天
         timeValue1: '', // 开始时间
         timeValue2: '', // 结束时间
@@ -136,23 +145,18 @@
       },
       timeValue2Disabled() {
         return !this.dateValue || !this.timeValue1
-      },
-      logInFlag() {
-        let userName = localStorage.getItem('userName') || ""
-        let pass = localStorage.getItem('pass') || ""
-        let logInFlag = false
-        if (userName && pass) {
-          logInFlag = false
-        } else {
-          logInFlag = true
-        }
-        return logInFlag
       }
     },
     created() {
 
     },
     methods: {
+      succeedLogIn() {
+        this.logInFlag = false
+      },
+      quit(){
+        this.logInFlag = true
+      },
       // 获取座位数据
       async seatDataPost(id) {
         this.floor = id
@@ -161,68 +165,67 @@
         let amount = 0
         let userArr = []
         let userSeatArr = []
-        let userSeatIndex = []
+        if (!this.appointmentDate || !this.timeValue1 || !this.timeValue2) {
+          return
+        }
         await db.tasks.where('floor').anyOf([id]).each((res) => {
           seatData.push(res)
         })
-        seatData.forEach((item,index) => {
-          item.seat.forEach((it,ind) => {
+        seatData.forEach((item) => {
+          item.seat.forEach((it) => {
             if (it.userArr && it.userArr.length) {
               it.userArr.forEach((it1) => {
                 userArr.push(it1)
-                userSeatIndex.push({
-                  index:index,
-                  ind:ind
-                })
               })
             }
           })
         })
-        if(userArr&&userArr.length){
+        if (userArr && userArr.length) {
           await db.user.where('userName').anyOf(userArr).each((res) => {
             userSeatArr.push({seat: res.seat})
           })
-          console.log(userSeatIndex);
-          console.log(userSeatArr);
-          userSeatArr.forEach((item,index) => {
-            item.seat.forEach((it,ind)=>{
-              console.log(it);
-              let seatDataItemIt =  seatData[userSeatIndex[index].index].seat[userSeatIndex[index].ind]
-              let startTime = new Date(that.appointmentDate + ' ' + that.timeValue1).getTime()
-              let endTime = new Date(that.appointmentDate + ' ' + that.timeValue2).getTime()
-              if (startTime >= it.endTime || endTime <= it.startTime) {
-                seatData[userSeatIndex[index].index].seat[userSeatIndex[index].ind].flag = false
-              } else {
-                seatData[userSeatIndex[ind].index].seat[userSeatIndex[ind].ind].flag = true
-                // console.log(this.$set(seatData, seatData[userSeatIndex[index].index].seat[userSeatIndex[index].ind].flag, true));
-                /*seatData[userSeatIndex[index].index] = {
-                  desk:seatDataItem.desk,
-                  floor:seatDataItem.floor,
-                  id:seatDataItem.id,
-                  seat:[
-                    ...seatDataItemIt
-                  ]
-                }*/
-                console.log(seatData[userSeatIndex[index].index].seat[userSeatIndex[index].ind]);
-                console.log(userSeatIndex[index].ind);
-                amount++
-              }
+          let startTime = new Date(that.appointmentDate + ' ' + that.timeValue1).getTime()
+          let endTime = new Date(that.appointmentDate + ' ' + that.timeValue2).getTime()
+          userSeatArr.forEach((item) => {
+            item.seat.forEach((it) => {
+              seatData.forEach((seatItem) => {
+                seatItem.seat.forEach((seatItemIt) => {
+                  if (seatItemIt.seatCode === it.seatCode) {
+                    if(startTime < it.endTime && endTime > it.startTime){
+                      console.log(seatItemIt.seatCode);
+                      console.log('startTime'+new Date(startTime));
+                      console.log('endTime'+new Date(endTime));
+                      console.log('B endTime'+new Date(it.startTime));
+                      console.log('B endTime'+new Date(it.endTime));
+                      if (startTime >= it.endTime || endTime <= it.startTime) {
+                        seatItemIt.flag = false
+                      } else {
+                        seatItemIt.flag = true
+                        amount++
+                      }
+                      console.log(seatItemIt.flag);
+                    }
+                  }
+                })
+              })
             })
           })
         }
-        console.log(seatData)
+        console.log(seatData);
         this.seatData = seatData
         this.amount = amount + ''
       },
       // 时间选择
-      timeSelect() {
+      timeSelect(value) {
         let appointmentDate = ''
         if (this.dateValue) {
           let selectDate = new Date(this.dateValue).getTime()
           appointmentDate = formatTime(selectDate, 'Y-M-D')
         }
+        if(value === 'timeValue1'){
+          this.timeValue2 = ''
+        }
         if (appointmentDate && this.timeValue1 && this.timeValue2) {
-          console.log(appointmentDate, this.timeValue1, this.timeValue2);
           this.appointmentDate = appointmentDate
           this.seatDataPost(this.floor)
         }
@@ -233,6 +236,10 @@
         let timeFlag = true
         let startTime = new Date(that.appointmentDate + ' ' + that.timeValue1).getTime()
         let endTime = new Date(that.appointmentDate + ' ' + that.timeValue2).getTime()
+        if (!this.appointmentDate || !this.timeValue1 || !this.timeValue2) {
+          this.$alert('请选择时间','提示')
+          return
+        }
         if (seat.flag) {
           this.$alert('此座位已被预约', '提示')
         } else {
@@ -272,7 +279,6 @@
                   }
                 })
               }).then(() => {
-                console.log("是否执行");
                 that.$alert('您已预约成功', '提示').then(() => {
                   that.seatDataPost(that.floor)
                 })

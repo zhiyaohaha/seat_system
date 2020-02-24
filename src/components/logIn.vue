@@ -2,9 +2,11 @@
   <div class="log_in" v-if="logInFlag">
     <div class="content">
       <div class="title">
-        <span @click="registerText" class="register_text" :class="{'register_flag':!registerFlag}">注册</span>/<span @click="logInText" :class="{'register_flag':registerFlag}" class="log_in_text">登录</span>
+        <span @click="registerText" class="register_text" :class="{'register_flag':!registerFlag}">注册</span>/<span
+        @click="logInText" :class="{'register_flag':registerFlag}" class="log_in_text">登录</span>
       </div>
-      <el-form  v-if="registerFlag" :model="ruleForm" status-icon :rules="rules" ref="ruleForm" label-width="auto" class="demo-ruleForm">
+      <el-form v-if="registerFlag" :model="ruleForm" status-icon :rules="rules" ref="ruleForm" label-width="auto"
+               class="demo-ruleForm">
         <el-form-item label="用户名" prop="userName" class="form_itme user_name">
           <el-input type="text" placeholder="用户名由12位英文字母和数字组成" maxlength="6" v-model="ruleForm.userName"></el-input>
         </el-form-item>
@@ -17,7 +19,8 @@
         <el-button type="primary" @click="submitForm('ruleForm')">提交</el-button>
         <el-button @click="resetForm('ruleForm')">重置</el-button>
       </el-form>
-      <el-form v-else :model="ruleForm" status-icon :rules="rules" ref="ruleForm" label-width="auto" class="demo-ruleForm">
+      <el-form v-else :model="ruleForm" status-icon :rules="rules" ref="ruleForm" label-width="auto"
+               class="demo-ruleForm">
         <el-form-item label="用户名" prop="userName" class="form_itme user_name">
           <el-input type="text" placeholder="用户名由12位英文字母和数字组成" maxlength="6" v-model="ruleForm.userName"></el-input>
         </el-form-item>
@@ -33,8 +36,15 @@
 
 <script>
   import db from '../db'
+
   export default {
     name: "log-in",
+    props:{
+      logInFlag:{
+        type:Boolean,
+        required:true
+      }
+    },
     data() {
       // 用户输入内容规则
       let reg = new RegExp(/^[a-z0-9]+$/i)
@@ -59,7 +69,7 @@
           if (this.ruleForm.pass !== '') {
             if (this.ruleForm.pass.length < 6) {
               callback(new Error('密码不能小于6位'));
-            }else if(!reg.test(this.ruleForm.pass)){
+            } else if (!reg.test(this.ruleForm.pass)) {
               callback(new Error('存在非法字符'));
             }
           }
@@ -76,12 +86,11 @@
         }
       };
       return {
-        logInFlag: true, // 登陆成功是否
-        registerFlag:true, // 登录||注册
+        registerFlag: true, // 登录||注册
         ruleForm: {
           userName: '',
           pass: '',
-          affirm:''
+          affirm: ''
         }, // 用户输入内容
         rules: {
           userName: [
@@ -90,42 +99,48 @@
           pass: [
             {validator: validatePass, trigger: 'blur'}
           ],
-          affirm:[
+          affirm: [
             {validator: validatePass2, trigger: 'blur'}
           ]
         } // 用户输入内容规则判定
       };
     },
+    created(){
+
+    },
+    computed: {
+
+    },
     methods: {
       submitForm(formName) {
         this.$refs[formName].validate((valid) => {
           if (valid) {
-            db.user.toArray().then((res)=>{
+            db.user.toArray().then((res) => {
               console.log(res)
               let usersList = res
               console.log(usersList);
               // 是注册还是登录
-              if(this.registerFlag){
+              if (this.registerFlag) {
                 // 注册
-                if(usersList&&usersList.length){
-                  let flag = usersList.findIndex((item)=>{
+                if (usersList && usersList.length) {
+                  let flag = usersList.findIndex((item) => {
                     return item.userName === this.ruleForm.userName
                   })
-                  if(flag == -1){
+                  if (flag == -1) {
                     this.succeeRegister(this.succeedLogIn)
                     this.$notify({
                       title: '提示',
                       message: '注册并登录成功',
                       duration: 0
                     })
-                  }else {
+                  } else {
                     this.$notify({
                       title: '提示',
                       message: '此账号已被注册，请更换用户名',
                       duration: 0
                     })
                   }
-                }else {
+                } else {
                   this.succeeRegister(this.succeedLogIn)
                   this.$notify({
                     title: '提示',
@@ -133,27 +148,27 @@
                     duration: 0
                   })
                 }
-              }else {
+              } else {
                 // 登录
-                if(usersList&&usersList.length){
-                  let flag = usersList.findIndex((item)=>{
+                if (usersList && usersList.length) {
+                  let flag = usersList.findIndex((item) => {
                     return item.userName === this.ruleForm.userName
                   })
-                  if(flag === -1){
+                  if (flag === -1) {
                     this.$notify({
                       title: '提示',
                       message: '此账号未注册，请先去注册',
                       duration: 0
                     })
-                  }else {
-                    if(usersList[flag].pass === this.ruleForm.pass){
+                  } else {
+                    if (usersList[flag].pass === this.ruleForm.pass) {
                       this.$notify({
                         title: '提示',
                         message: '登录成功',
                         duration: 0
                       })
-                      this.succeedLogIn()
-                    }else {
+                      this.succeedLogIn(usersList[flag].id)
+                    } else {
                       this.$notify({
                         title: '提示',
                         message: '密码错误，请重新输入',
@@ -161,7 +176,7 @@
                       })
                     }
                   }
-                }else {
+                } else {
                   this.$notify({
                     title: '提示',
                     message: '此账号未注册，请先去注册',
@@ -178,31 +193,31 @@
         });
       },
       // 注册逻辑
-      succeeRegister(cb){
+      succeeRegister(cb) {
         db.user.add({
-          userName:this.ruleForm.userName,
-          pass:this.ruleForm.pass,
-          seat:[]
-        }).then((res)=>{
-          cb&&cb(res)
+          userName: this.ruleForm.userName,
+          pass: this.ruleForm.pass,
+          seat: []
+        }).then((res) => {
+          cb && cb(res)
         })
       },
       // 成功登录逻辑
-      succeedLogIn(id){
-        localStorage.setItem('userName',this.ruleForm.userName)
-        localStorage.setItem('pass',this.ruleForm.pass)
-        id&&localStorage.setItem('userId',id)
-        this.logInFlag = false
+      succeedLogIn(id) {
+        localStorage.setItem('userName', this.ruleForm.userName)
+        localStorage.setItem('pass', this.ruleForm.pass)
+        id && localStorage.setItem('userId', id)
+        this.$emit('succeedLogIn')
       },
       resetForm(formName) {
         this.$refs[formName].resetFields();
       },
       // 点击登录
-      logInText(){
+      logInText() {
         this.registerFlag = false
       },
       // 点击注册
-      registerText(){
+      registerText() {
         this.registerFlag = true
       }
     }

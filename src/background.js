@@ -133,9 +133,11 @@ app.on('ready', async () => {
     // } catch (e) {
     //   console.error('Vue Devtools failed to install:', e.toString())
     // }
-    // 添加菜单
-    Menu.setApplicationMenu(menu)
   }
+  // 添加菜单
+
+  Menu.setApplicationMenu(menu)
+
   createWindow()
 })
 
