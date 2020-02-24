@@ -1,35 +1,59 @@
 <template>
   <div class="log_in" v-if="logInFlag">
     <div class="content">
-      <div class="title">
-        <span @click="registerText" class="register_text" :class="{'register_flag':!registerFlag}">注册</span>/<span
-        @click="logInText" :class="{'register_flag':registerFlag}" class="log_in_text">登录</span>
-      </div>
-      <el-form v-if="registerFlag" :model="ruleForm" status-icon :rules="rules" ref="ruleForm" label-width="auto"
-               class="demo-ruleForm">
-        <el-form-item label="用户名" prop="userName" class="form_itme user_name">
-          <el-input type="text" placeholder="用户名由12位英文字母和数字组成" maxlength="6" v-model="ruleForm.userName"></el-input>
-        </el-form-item>
-        <el-form-item label="密码" prop="pass" class="form_itme password">
-          <el-input type="password" placeholder="密码由6-12位英文字母和数字组成" maxlength="12" v-model="ruleForm.pass"></el-input>
-        </el-form-item>
-        <el-form-item label="确认密码" prop="affirm" class="form_itme password">
-          <el-input type="password" placeholder="请再次输入密码" maxlength="12" v-model="ruleForm.affirm"></el-input>
-        </el-form-item>
-        <el-button type="primary" @click="submitForm('ruleForm')">提交</el-button>
-        <el-button @click="resetForm('ruleForm')">重置</el-button>
-      </el-form>
-      <el-form v-else :model="ruleForm" status-icon :rules="rules" ref="ruleForm" label-width="auto"
-               class="demo-ruleForm">
-        <el-form-item label="用户名" prop="userName" class="form_itme user_name">
-          <el-input type="text" placeholder="用户名由12位英文字母和数字组成" maxlength="6" v-model="ruleForm.userName"></el-input>
-        </el-form-item>
-        <el-form-item label="密码" prop="pass" class="form_itme password">
-          <el-input type="password" placeholder="密码由12位英文字母和数字组成" maxlength="12" v-model="ruleForm.pass"></el-input>
-        </el-form-item>
-        <el-button type="primary" @click="submitForm('ruleForm')">提交</el-button>
-        <el-button @click="resetForm('ruleForm')">重置</el-button>
-      </el-form>
+      <el-tabs v-model="activeName" type="border-card" class="cut_log_in" @tab-click="handleClick">
+        <el-tab-pane label="用户登录" class="user_tab tab" name="first">
+          <div v-if="activeName === 'first'">
+            <div class="title">
+              <span @click="registerText" class="register_text" :class="{'register_flag':!registerFlag}">注册</span>/<span
+              @click="logInText" :class="{'register_flag':registerFlag}" class="log_in_text">登录</span>
+            </div>
+            <el-form v-if="registerFlag" :model="ruleForm" status-icon :rules="rules" ref="ruleForm" label-width="auto"
+                     class="demo-ruleForm">
+              <el-form-item label="用户名" prop="userName" class="form_itme user_name">
+                <el-input type="text" placeholder="用户名由12位英文字母和数字组成" maxlength="6" v-model="ruleForm.userName"></el-input>
+              </el-form-item>
+              <el-form-item label="密码" prop="pass" class="form_itme password">
+                <el-input type="password" placeholder="密码由6-12位英文字母和数字组成" maxlength="12"
+                          v-model="ruleForm.pass"></el-input>
+              </el-form-item>
+              <el-form-item label="确认密码" prop="affirm" class="form_itme password">
+                <el-input type="password" placeholder="请再次输入密码" maxlength="12" v-model="ruleForm.affirm"></el-input>
+              </el-form-item>
+              <el-button type="primary" @click="submitForm('ruleForm')">提交</el-button>
+              <el-button @click="resetForm('ruleForm')">重置</el-button>
+            </el-form>
+            <el-form v-else :model="ruleForm" status-icon :rules="rules" ref="ruleForm" label-width="auto"
+                     class="demo-ruleForm">
+              <el-form-item label="用户名" prop="userName" class="form_itme user_name">
+                <el-input type="text" placeholder="用户名由12位英文字母和数字组成" maxlength="6" v-model="ruleForm.userName"></el-input>
+              </el-form-item>
+              <el-form-item label="密码" prop="pass" class="form_itme password">
+                <el-input type="password" placeholder="密码由12位英文字母和数字组成" maxlength="12" v-model="ruleForm.pass"></el-input>
+              </el-form-item>
+              <el-button type="primary" @click="submitForm('ruleForm')">提交</el-button>
+              <el-button @click="resetForm('ruleForm')">重置</el-button>
+            </el-form>
+          </div>
+        </el-tab-pane>
+        <el-tab-pane label="管理员登录" class="manage_tab tab" name="second">
+          <el-form v-if="activeName === 'second'" :model="manageRuleForm" status-icon :rules="manageRules" ref="manageRuleForm"
+                   label-width="auto"
+                   class="demo-ruleForm">
+            <el-form-item label="用户名" prop="userName" class="form_itme user_name">
+              <el-input type="text" placeholder="用户名由12位英文字母和数字组成" maxlength="5"
+                        v-model="manageRuleForm.userName"></el-input>
+            </el-form-item>
+            <el-form-item label="密码" prop="pass" class="form_itme password">
+              <el-input type="password" placeholder="密码由12位英文字母和数字组成" maxlength="6"
+                        v-model="manageRuleForm.pass"></el-input>
+            </el-form-item>
+            <el-button type="primary" @click="manageSubmitForm('manageRuleForm')">提交</el-button>
+            <el-button @click="manageResetForm('manageRuleForm')">重置</el-button>
+          </el-form>
+        </el-tab-pane>
+      </el-tabs>
+
     </div>
   </div>
 </template>
@@ -39,10 +63,10 @@
 
   export default {
     name: "log-in",
-    props:{
-      logInFlag:{
-        type:Boolean,
-        required:true
+    props: {
+      logInFlag: {
+        type: Boolean,
+        required: true
       }
     },
     data() {
@@ -85,6 +109,26 @@
           callback();
         }
       };
+      let manageUserName= (rule, value, callback) => {
+        if (value === '') {
+          callback(new Error('请输入用户名'));
+        } else {
+          if (this.manageRuleForm.userName !== 'admin') {
+            callback(new Error('用户名不正确'));
+          }
+          callback();
+        }
+      }
+      let managePass= (rule, value, callback) => {
+        if (value === '') {
+          callback(new Error('请输入密码'));
+        } else {
+          if (this.manageRuleForm.pass !== '000000') {
+            callback(new Error('密码不正确'));
+          }
+          callback();
+        }
+      }
       return {
         registerFlag: true, // 登录||注册
         ruleForm: {
@@ -102,23 +146,52 @@
           affirm: [
             {validator: validatePass2, trigger: 'blur'}
           ]
-        } // 用户输入内容规则判定
+        }, // 用户输入内容规则判定
+        activeName: 'first',
+        manageRuleForm: {
+          userName: '',
+          pass: ''
+        },
+        manageRules: {
+          userName: [
+            {validator: manageUserName, trigger: 'blur'}
+          ],
+          pass: [
+            {validator: managePass, trigger: 'blur'}
+          ]
+        }
       };
     },
-    created(){
+    created() {
 
     },
-    computed: {
-
-    },
+    computed: {},
     methods: {
+      // 切换用户
+      handleClick(tab, event) {
+
+      },
+      // 管理员登录
+      manageSubmitForm(formName) {
+        this.$refs[formName].validate((valid) => {
+          if (valid) {
+            localStorage.setItem('userName','admin')
+            localStorage.setItem('pass','000000')
+            localStorage.setItem('userId','0')
+            this.$emit('manage')
+          }
+        })
+      },
+      // 管理员重置
+      manageResetForm(formName) {
+        this.$refs[formName].resetFields();
+      },
+      // 登录逻辑
       submitForm(formName) {
         this.$refs[formName].validate((valid) => {
           if (valid) {
             db.user.toArray().then((res) => {
-              console.log(res)
               let usersList = res
-              console.log(usersList);
               // 是注册还是登录
               if (this.registerFlag) {
                 // 注册
@@ -233,21 +306,21 @@
     width 100vw
     height 100vh
     background rgba(0, 0, 0, .5)
-
     .content
       position absolute
       top 50%
       left 50%
       transform translate(-50%, -50%)
       width 400px
-      height 300px
       background white
       border-radius 10px
+      .cut_log_in
+        .tab
+          height 100%
       .title
         color #333333
-        font-size 18px
+        font-size 16px
         text-align center
-        margin-top 20px
         .register_flag
           color #1f6fff
           cursor pointer

@@ -1,8 +1,5 @@
 <template>
-  <div class="home" @succeedLogIn="succeedLogIn">
-    <!--<logIn v-if="logInFlag"></logIn>-->
-    <logIn :logInFlag="logInFlag" @manage="manage" @succeedLogIn="succeedLogIn"></logIn>
-    <myInfo @quit="quit"></myInfo>
+  <div class="manage_home">
     <el-card class="box_card" shadow="always">
       <el-row class="time_select" align="middle">
         <el-col :span="2">
@@ -18,33 +15,8 @@
             :picker-options="pickerOptions">
           </el-date-picker>
         </el-col>
-        <el-col :span="6">
-          <el-time-select
-            @change="timeSelect('timeValue1')"
-            v-model="timeValue1"
-            :disabled="timeValue1Disabled"
-            :picker-options="{
-                start: '08:00',
-                step: '1:00',
-                end: '21:00',
-                minTime:startMinTime
-              }"
-            placeholder="开始时间">
-          </el-time-select>
-        </el-col>
-        <el-col :span="6">
-          <el-time-select
-            :disabled="timeValue2Disabled"
-            @change="timeSelect"
-            v-model="timeValue2"
-            :picker-options="{
-                start: '08:00',
-                step: '1:00',
-                end: '21:00',
-                minTime: timeValue1
-              }"
-            placeholder="结束时间">
-          </el-time-select>
+        <el-col :span="6" :push="14">
+          <el-button @click="quit" type="primary">退出</el-button>
         </el-col>
       </el-row>
       <el-row class="floor" align="middle">
@@ -73,7 +45,7 @@
             'box-sizing':'border-box'
           }">
           <template v-for="(it, ind) in item.seat">
-            <div class="desk_seat" :key="it.seatCode" @click="deskSeatSelect(item,it)" :class="{top_left:ind===0,
+            <div class="desk_seat" :key="it.seatCode" @click="deskSeatSelect(it)" :class="{top_left:ind===0,
             top_right:ind===1,
             bottom_left:ind===2,
             bottom_right:ind===3}">
@@ -85,32 +57,45 @@
         </el-card>
       </el-card>
     </el-card>
+    <transition name="fade">
+      <div v-show="drawer" class="drawer" @click.self="handleClose">
+        <el-card shadow="always" class="drawer_content">
+          <div class="title">预约信息</div>
+          <div class="makeAnAppointment">
+            <div v-if="userSeatData&&userSeatData.length&&item.seatCode === selectCode" class="makeItem"
+                 v-for="(item, index) in userSeatData"
+                 :key="index">
+              <div class="">
+                用户名:{{item.userName}}
+              </div>
+              <div class="">
+                楼层:{{item.floor}}F
+              </div>
+              <div class="">
+                座位:{{item.seatCode}}
+              </div>
+              <div class="">
+                时间:{{item.startTime + '到' + item.endTime}}
+              </div>
+            </div>
+          </div>
+        </el-card>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script>
-  // @ is an alias to /src
   import logIn from '../components/logIn'
   import myInfo from './myInfo'
   import {formatTime} from '../tools/util'
   import db from '../db'
 
   export default {
-    name: 'Home',
+    name: 'manage_home',
     data() {
-      let userName = localStorage.getItem('userName') || ""
-      let pass = localStorage.getItem('pass') || ""
-      let logInFlag = false
-      if (userName && pass) {
-        logInFlag = false
-      } else {
-        logInFlag = true
-      }
       return {
-        logInFlag:logInFlag,
         dateValue: '', // 天
-        timeValue1: '', // 开始时间
-        timeValue2: '', // 结束时间
         pickerOptions: {
           disabledDate(time) {
             let mondayTime = Date.now() + 6 * 24 * 60 * 60 * 1000
@@ -121,48 +106,32 @@
         seatData: null, // 座位信息
         amount: 0,// 已预约座位
         floor: 1, // 以选择楼层
-        appointmentDate: ''
+        appointmentDate: '', // 时间格式
+        userSeatData: '', // 预约座位信息
+        drawer: false, // 预约座位信息展示
+        selectCode:'' // 选择的座位号
       }
     },
     components: {
       logIn, myInfo
     },
-    computed: {
-      startMinTime() {
-        let time = '7:00'
-        let dateDay = ''
-        let nowDay = formatTime(new Date().getTime(), 'D')
-        if (this.dateValue) {
-          dateDay = formatTime(this.dateValue * 1, 'D')
-          if (dateDay === nowDay) {
-            time = formatTime(new Date().getTime(), 'h:00')
-          }
-        }
-        return time
-      },
-      timeValue1Disabled() {
-        return !this.dateValue
-      },
-      timeValue2Disabled() {
-        return !this.dateValue || !this.timeValue1
-      }
-    },
+    computed: {},
     created() {
       let userId = localStorage.getItem('userId')
-      if(userId === '0'){
-        this.$router.push({name:'manageHome'})
+      if (userId === '0') {
+        this.$router.push({name: 'manageHome'})
       }
     },
     methods: {
-      manage(){
-        this.succeedLogIn()
-        this.$router.push({name:'manageHome'})
+      handleClose() {
+        this.drawer = false
       },
-      succeedLogIn() {
-        this.logInFlag = false
-      },
-      quit(){
-        this.logInFlag = true
+      // 退出
+      quit() {
+        localStorage.setItem('userName', '')
+        localStorage.setItem('pass', '')
+        localStorage.setItem('userId', '')
+        this.$router.push('/')
       },
       // 获取座位数据
       async seatDataPost(id) {
@@ -172,7 +141,11 @@
         let amount = 0
         let userArr = []
         let userSeatArr = []
-        if (!this.appointmentDate || !this.timeValue1 || !this.timeValue2) {
+        let userSeatDataArr = []
+        let userSeatData = []
+        let startTime = new Date(that.appointmentDate).getTime()
+        let endTime = new Date(that.appointmentDate).getTime() + 24 * 60 * 60 * 1000
+        if (!this.appointmentDate) {
           return
         }
         await db.tasks.where('floor').anyOf([id]).each((res) => {
@@ -189,16 +162,15 @@
         })
         if (userArr && userArr.length) {
           await db.user.where('userName').anyOf(userArr).each((res) => {
+            userSeatDataArr.push(res)
             userSeatArr.push({seat: res.seat})
           })
-          let startTime = new Date(that.appointmentDate + ' ' + that.timeValue1).getTime()
-          let endTime = new Date(that.appointmentDate + ' ' + that.timeValue2).getTime()
           userSeatArr.forEach((item) => {
             item.seat.forEach((it) => {
               seatData.forEach((seatItem) => {
                 seatItem.seat.forEach((seatItemIt) => {
                   if (seatItemIt.seatCode === it.seatCode) {
-                    if(startTime < it.endTime && endTime > it.startTime){
+                    if (startTime < it.endTime && endTime > it.startTime) {
                       if (startTime >= it.endTime || endTime <= it.startTime) {
                         seatItemIt.flag = false
                       } else {
@@ -211,89 +183,45 @@
             })
           })
         }
-        console.log(seatData);
-        seatData.forEach((item)=>{
-          item.seat.forEach((it)=>{
-            if(it.flag){
+        seatData.forEach((item) => {
+          item.seat.forEach((it) => {
+            if (it.flag) {
               amount++
             }
           })
         })
+        userSeatDataArr.forEach((item) => {
+          item.seat.forEach((it) => {
+            userSeatData.push({
+              floor: it.floor,
+              seatCode: it.seatCode,
+              startTime: formatTime(it.startTime, 'Y-M-D h:00:00'),
+              endTime: formatTime(it.endTime, 'h:00:00'),
+              userName: item.userName
+            })
+          })
+        })
         this.seatData = seatData
         this.amount = amount + ''
+        this.userSeatData = userSeatData
       },
       // 时间选择
-      timeSelect(value) {
+      timeSelect() {
         let appointmentDate = ''
         if (this.dateValue) {
           let selectDate = new Date(this.dateValue).getTime()
           appointmentDate = formatTime(selectDate, 'Y-M-D')
         }
-        if(value === 'timeValue1'){
-          this.timeValue2 = ''
-        }
-        if (appointmentDate && this.timeValue1 && this.timeValue2) {
+        if (appointmentDate) {
           this.appointmentDate = appointmentDate
           this.seatDataPost(this.floor)
         }
       },
       // 座位选择
-      deskSeatSelect(desk, seat) {
-        let that = this
-        let timeFlag = true
-        let startTime = new Date(that.appointmentDate + ' ' + that.timeValue1).getTime()
-        let endTime = new Date(that.appointmentDate + ' ' + that.timeValue2).getTime()
-        if (!this.appointmentDate || !this.timeValue1 || !this.timeValue2) {
-          this.$alert('请选择时间','提示')
-          return
-        }
-        if (seat.flag) {
-          this.$alert('此座位已被预约', '提示')
-        } else {
-          let userId = localStorage.getItem('userId') * 1
-          let userName = localStorage.getItem('userName')
-          this.$confirm('是否预约此座位', '提示').then(() => {
-            db.user.where("id").equals(userId).modify((userRes) => {
-              userRes.seat.forEach((item) => {
-                if (startTime < item.endTime && endTime > item.startTime) {
-                  timeFlag = false
-                }
-              })
-              if (timeFlag) {
-                userRes.seat[userRes.seat.length] = {
-                  floor: that.floor,
-                  startTime: startTime,
-                  endTime: endTime,
-                  seatCode: seat.seatCode
-                }
-              } else {
-                that.$alert('您在此时间已有预约', '提示')
-              }
-            }).then(() => {
-              if (!timeFlag) {
-                return
-              }
-              db.tasks.where("id").equals(desk.id).modify((res) => {
-                res.seat.forEach((item, index, arr) => {
-                  if (seat.seatCode === item.seatCode && item.userArr.indexOf(userName) === -1) {
-                    arr[index] = {
-                      flag: false,
-                      userArr: [
-                        ...seat.userArr, userName
-                      ],
-                      seatCode: item.seatCode
-                    }
-                  }
-                })
-              }).then(() => {
-                that.$alert('您已预约成功', '提示').then(() => {
-                  that.seatDataPost(that.floor)
-                })
-              })
-            })
-          }).catch((err) => {
-            console.log(err);
-          })
+      deskSeatSelect(item) {
+        if(item.flag){
+          this.selectCode = item.seatCode
+          this.drawer = true
         }
       },
       //  时间筛选
@@ -301,8 +229,9 @@
     }
   }
 </script>
+
 <style lang="stylus" rel="stylesheet/stylus" scoped>
-  .home
+  .manage_home
     .box_card
       height 94vh
       .time_select
@@ -351,4 +280,57 @@
             border-radius 5px
             transform translate(-50%, -50%)
 
+  .drawer
+    position fixed
+    top 0
+    left 0
+    z-index 50
+    width 100%
+    height 100%
+    background rgba(0, 0, 0, .1)
+    .drawer_content
+      position absolute
+      top 5px
+      right 10px
+      width 300px
+      height 98%
+      .user
+        width 100%
+        height 50px
+        border-radius 10px
+        box-shadow #dedede 0px 0px 2px 2px
+        text-align center
+        line-height 50px
+      .title
+        text-align center
+        height 20px
+        font-size 16px
+      .makeAnAppointment
+        box-sizing border-box
+        width 100%
+        height 500px
+        border-radius 10px
+        margin-top 5px
+        box-shadow #dedede 0px 0px 2px 2px
+        padding 10px
+        overflow-y scroll
+        .makeItem
+          box-sizing border-box
+          padding 15px 0 0 10px
+          width 100%
+          height 130px
+          background #8cc5ff
+          border-radius 5px
+          margin-top 10px
+          color 303133
+          &:first-of-type
+            margin-top 0
+
+  .fade-enter-active, .fade-leave-active {
+    transition: all .5s;
+  }
+  .fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */
+  {
+    transform translate(100%)
+  }
 </style>
