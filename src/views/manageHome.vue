@@ -192,13 +192,15 @@
         })
         userSeatDataArr.forEach((item) => {
           item.seat.forEach((it) => {
-            userSeatData.push({
-              floor: it.floor,
-              seatCode: it.seatCode,
-              startTime: formatTime(it.startTime, 'Y-M-D h:00:00'),
-              endTime: formatTime(it.endTime, 'h:00:00'),
-              userName: item.userName
-            })
+            if(startTime < it.endTime && endTime > it.startTime){
+              userSeatData.push({
+                floor: it.floor,
+                seatCode: it.seatCode,
+                startTime: formatTime(it.startTime, 'Y-M-D h:00:00'),
+                endTime: formatTime(it.endTime, 'h:00:00'),
+                userName: item.userName
+              })
+            }
           })
         })
         this.seatData = seatData
