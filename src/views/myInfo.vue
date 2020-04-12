@@ -23,8 +23,9 @@
               </div>
             </div>
           </div>
-          <div class="user_operation_btn" @click="quit">
-            <el-button class="quit" type="primary">退出</el-button>
+          <div class="user_operation_btn">
+            <el-button class="quit" type="primary" @click="leaveAMessage">留言</el-button>
+            <el-button class="quit" type="primary" @click="quit">退出</el-button>
           </div>
         </el-card>
       </div>
@@ -49,6 +50,23 @@
         </div>
       </div>
     </div>
+    <el-dialog
+      title="留言板"
+      :visible.sync="isMessage"
+      width="50%">
+      <el-input
+        type="textarea"
+        :rows="4"
+        placeholder="请输入内容"
+        maxlength="200"
+        show-word-limit
+        v-model="textarea">
+      </el-input>
+      <span slot="footer">
+    <el-button @click="isMessage = false">取 消</el-button>
+    <el-button type="primary" @click="messageConfirm">确 定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -61,39 +79,39 @@
     data() {
       let userName = localStorage.getItem('userName')
       return {
-        userName:userName,
+        userName: userName,
         drawer: false,
         userSeatData: [], // 我的预约信息
-        DialogVisible:false,
-        seatItem:{}
+        DialogVisible: false,
+        seatItem: {},
+        isMessage:false, // 留言板显示
+        textarea:''// 留言板内容
       };
     },
-    computed: {
-
-    },
+    computed: {},
     methods: {
       // 关闭详情
-      infoClose(){
+      infoClose() {
         this.DialogVisible = false
       },
       // 删除此信息
-      delect(){
-        let userId = localStorage.getItem('userId')*1
+      delect() {
+        let userId = localStorage.getItem('userId') * 1
         let that = this
-        this.$confirm('是否确定删除此信息','提示').then(()=>{
+        this.$confirm('是否确定删除此信息', '提示').then(() => {
           db.user.where("id").equals(userId).modify((res) => {
             res.seat.splice(that.seatItem.index, 1)
-          }).then(()=>{
-            that.getSeat().then(()=>{
+          }).then(() => {
+            that.getSeat().then(() => {
               that.DialogVisible = false
             })
           })
-        }).catch(()=>{
+        }).catch(() => {
 
         })
       },
       // 详情
-      DialogVisibleIsShow(seatItem,index){
+      DialogVisibleIsShow(seatItem, index) {
         seatItem.index = index
         this.DialogVisible = true
         this.seatItem = seatItem
@@ -108,19 +126,15 @@
         this.userName = localStorage.getItem('userName')
         let userId = localStorage.getItem('userId') * 1
         let userSeatData = []
-        await db.user.where("id").equals(userId).modify((res) => {
-          res.seat.forEach((item, index, arr) => {
-            if (item.endTime < Date.now()) {
-              arr.splice(index, 1)
-            }
-          })
-        })
         db.user.where('id').anyOf([userId]).each((res) => {
           userSeatData = res.seat
         }).then(() => {
           userSeatData.forEach((item) => {
             item.startTime = formatTime(item.startTime, "Y-M-D h:00")
             item.endTime = formatTime(item.endTime, 'h:00')
+          })
+          userSeatData = userSeatData.filter((item)=>{
+            return item.endTime < Date.now()
           })
           console.log(userSeatData);
           this.userSeatData = userSeatData
@@ -139,6 +153,27 @@
           this.$emit('quit')
         }).catch(() => {
         })
+      },
+      // 留言
+      leaveAMessage() {
+        this.isMessage = true
+      },
+    //  留言确定
+      messageConfirm(){
+        let userId = localStorage.getItem('userId')
+        db.message.put({
+          userId:userId,
+          userName:this.userName,
+          time:new Date().getTime(),
+          content:this.textarea
+        }).then(()=>{
+          this.isMessage = false
+          this.$notify({
+            title: '提示',
+            message: '已发送',
+            duration: 0
+          })
+        })
       }
     }
   }
@@ -152,7 +187,7 @@
       width 100vw
       height 100vh
       position fixed
-      background rgba(0,0,0,.3)
+      background rgba(0, 0, 0, .3)
       z-index 100
       .title
         text-align center

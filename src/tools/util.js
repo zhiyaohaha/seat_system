@@ -38,4 +38,9 @@ export function examineValue(value) {
   }
   return false
 }
-
+// 转换百分比
+export function toPercent(point) {
+  let str = Number(point * 100).toFixed(4);
+  str += "%";
+  return str;
+}

@@ -23,7 +23,8 @@ for (let i = 0; i < 4; i++) {
 let db = new Dexie('seat');
 db.version(1).stores({
   tasks: '++id,seat,floor,desk',
-  user:'++id,userName,pass,seat'
+  user:'++id,userName,pass,seat',
+  message:'++id,userId,userName,time,content'
 })
 console.log(db.user);
 
@@ -31,11 +32,6 @@ async function generatedData() {
   await db.tasks.bulkPut([
     ...floor1Data
   ])
-  await db.tasks.put({
-    userName:'admin',
-    pass:'000000',
-    seat:[]
-  })
 }
 
 db.tasks.count((res) => {
