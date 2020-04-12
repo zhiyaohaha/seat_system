@@ -359,11 +359,7 @@
         if (this.gridData.length) {
           gridData = this.gridData
         }
-        if (!!this.floorValue) { // 楼层
-
-        } else if (!!this.timeValue2) { // 时间段
-
-        } else if (!!this.monthDay) {// 天
+        if (!!this.monthDay) {// 天
           this.arrUsageRate.forEach((item, index) => {
             let timeDifference = 0
             item.days.forEach((it, ind) => {
@@ -379,21 +375,26 @@
           })
         } else {// 月份
           let momthTime = dayTime * monthLength
+          let momth = formatTime(new Date(this.messageMonth).getTime(),'Y-M')
           this.arrUsageRate.forEach((item, index) => {
             gridData[index] = {
               seatCode: item.seatCode,
               floor: item.floor,
               usageRate: '0%'
             }
-            if (monthLength !== '') {
-              if (item.timeDifference === 0) {
-                gridData[index].usageRate = '0%'
+            item.month.forEach((it)=>{
+              if (monthLength !== '') {
+                if(momth === it.time){
+                  if (it.timeDifference === 0) {
+                    gridData[index].usageRate = '0%'
+                  } else {
+                    gridData[index].usageRate = toPercent(it.timeDifference / momthTime)
+                  }
+                }
               } else {
-                gridData[index].usageRate = toPercent(item.timeDifference / momthTime)
+                gridData = []
               }
-            } else {
-              gridData = []
-            }
+            })
           })
         }
         this.gridData = gridData
@@ -420,7 +421,8 @@
               seatCode: it.seatCode,
               floor: item.floor,
               userArr: it.userArr,
-              timeDifference: 0,
+              timeDifference:0,
+              month: [],
               days: []
             })
           })
@@ -440,6 +442,10 @@
           arrUsageRate.forEach((it, ind) => {
             if (item.seatCode === it.seatCode) {
               it.timeDifference += item.endTime - item.startTime
+              it.month.push({
+                time:formatTime(item.startTime, 'Y-M'),
+                timeDifference: it.timeDifference || 0
+              })
               it.days.push({
                 day: formatTime(item.startTime, 'Y-M-D'),
                 timeDifference: it.timeDifference,
@@ -447,6 +453,7 @@
             }
           })
         })
+        console.log(arrUsageRate);
         this.statisticsArr = statisticsArr
         this.arrUsageRate = arrUsageRate
       },
