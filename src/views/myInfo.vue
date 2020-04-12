@@ -127,16 +127,17 @@
         let userId = localStorage.getItem('userId') * 1
         let userSeatData = []
         db.user.where('id').anyOf([userId]).each((res) => {
+          console.log(res);
           userSeatData = res.seat
         }).then(() => {
+          userSeatData = userSeatData.filter((item)=>{
+            return item.endTime > Date.now()
+          })
           userSeatData.forEach((item) => {
             item.startTime = formatTime(item.startTime, "Y-M-D h:00")
             item.endTime = formatTime(item.endTime, 'h:00')
           })
-          userSeatData = userSeatData.filter((item)=>{
-            return item.endTime < Date.now()
-          })
-          console.log(userSeatData);
+
           this.userSeatData = userSeatData
         })
       },

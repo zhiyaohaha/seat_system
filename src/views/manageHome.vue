@@ -139,7 +139,7 @@
           <el-time-select
             @change="messageTimeSelect('timeValue1')"
             v-model="timeValue1"
-            :disabled="!messageDay"
+            :disabled="!(messageDay+'')"
             :picker-options="{
                 start: '08:00',
                 step: '1:00',
@@ -284,7 +284,9 @@
         let F3count = 0
         let F4count = 0
         this.statisticsArr.forEach((item) => {
-          if (startTime <= item.startTime && item.endTime <= atLastTime) {
+          if (endTime <= item.startTime || item.endTime <= startTime) {
+
+          }else {
             count++
             if (item.floor == 1) {
               F1count++
@@ -320,6 +322,9 @@
       },
       // 统计 时间段选择
       messageTimeSelect(res) {
+        if(res === 'timeValue1'){
+          this.timeValue2 = ''
+        }
       },
 
       // 统计 月份选择
